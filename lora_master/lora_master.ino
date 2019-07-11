@@ -37,7 +37,7 @@ void setup() {
           delay(500);
           Serial.print(".");
       }
-        Serial.print("Kết nối thành công đến ");
+  Serial.print("Kết nối thành công đến ");
   Serial.println(ssid);
   
   
@@ -53,47 +53,41 @@ void loop() {
        delay(5000);
 }
 
+/**
+ * gọi api hỏi trạng thái của đèn 
+ * Sau khi nhận được thông tin trạng thái của đèn sẽ gửi trạng thái đến lora node (đèn)
+ */
 void getStatusOfLED(){
-  HTTPClient http;    //Sử dụng httpclient để gọi api
+        HTTPClient http;    //Sử dụng httpclient để gọi api
 
-        //url của api, do api sử dụng https nên cần thêm thumbprint của certificate
-        //http.begin("https://studentattendmanagement.herokuapp.com/device/status","083b717202436ecaed428693ba7edf81c4bc6230");
         http.begin("http://iots16.azurewebsites.net/api/GetLightStatusCurrent");
         http.setTimeout(30000); // set timeout 30s
-     //   http.addHeader("Content-Type", "application/x-www-form-urlencoded");    //add content-type header
-
-          
-        //String postData= "deviceType=1";
-        
-      //  int httpCode = http.POST(postData);   //gửi request method POST kèm request body
+    
         int httpCode=http.GET();
         String payload = http.getString();    //get response body
         //chuyển đổi response body dạng string thành json object
         DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject(payload);
-        boolean status = root[String("success")];
+        JsonObject& root = jsonBuffer.parseObject(payload);;;;;;;;;;;;
+        boolean isSuccess = root[String("success")];
 
         //nếu gọi api thành công nhận được httpCode 200 OK
         if(httpCode==200){
-          if(status == 1){
-         
+          if(isSuccess == 1){
               DynamicJsonBuffer jsonBuf;
-            //  String lightData = root[String("result")];
-                String lightData = root[String("data")][0];
-            //  Serial.println("data light "+lightData);
+              String lightData = root[String("data")][0];
               JsonObject& dataObject = jsonBuf.parseObject(lightData);
+              //parse chuỗi json trong response nhận được để lấy trạng thái hiện tại của đèn
               String statusLight = dataObject[String("Status")];
             
-                
-                String statusLED="";
-                if(statusLight=="1"){
-               statusLED="on";
-                }else{
-                  statusLED="off";
-                  }
-                   loraSerial.print(statusLED);
-                Serial.println("Trạng thái hiện tại của đèn là: "+statusLED);
-            
+              String statusLED="";
+              if(statusLight=="1"){
+                statusLED="on";
+              }else{
+                statusLED="off";
+              }
+              loraSerial.print(statusLED);
+              Serial.println("Trạng thái hiện tại của đèn là: "+statusLED);
+ 
           }else{
               String error = root[String("description")];
               //hiển thị lỗi
@@ -104,23 +98,23 @@ void getStatusOfLED(){
         }
        http.end();  //Đóng kết nối
   }
-  
+
+  /**
+   * Hàm nhận dữ liệu độ ẩm từ lora node và gửi đến server thông qua api
+   * 
+   * */
 void sendDataHumiditySoil(){
     if(loraSerial.available()){
-         String mosData = loraSerial.readString();
-         
-          HTTPClient http;    //Sử dụng httpclient để gọi api
+        String mosData = loraSerial.readString();
+        HTTPClient http;    //Sử dụng httpclient để gọi api
 
-        //url của api, do api sử dụng https nên cần thêm thumbprint của certificate
-        //http.begin("https://studentattendmanagement.herokuapp.com/device/status","083b717202436ecaed428693ba7edf81c4bc6230");
-      
-         String postData= "?deviceid=2&data="+mosData;
+        String postData= "?deviceid=2&data="+mosData;
         http.begin("http://iots16.azurewebsites.net/api/PostHumidity"+postData);
         http.setTimeout(30000); // set timeout 30s
         http.addHeader("Content-Type", "application/x-www-form-urlencoded");    //add content-type header
     
-       int httpCode = http.POST(postData);   //gửi request method POST kèm request body
-       // int httpCode=http.GET();
+        int httpCode = http.POST(postData);   //gửi request method POST kèm request body
+    
         String payload = http.getString();    //get response body
        
         //chuyển đổi response body dạng string thành json object
